@@ -1,0 +1,161 @@
+name: Backend Tests & Build
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: crypto_user
+          POSTGRES_PASSWORD: crypto_password
+          POSTGRES_DB: crypto_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r user-service/requirements.txt
+        pip install pytest-cov pytest-asyncio
+    
+    - name: Lint with pylint
+      run: |
+        pip install pylint
+        pylint user-service/app --exit-zero --max-line-length=100
+    
+    - name: Run User Service tests
+      env:
+        DATABASE_URL: postgresql://crypto_user:crypto_password@localhost:5432/crypto_db
+        REDIS_URL: redis://localhost:6379/0
+        JWT_SECRET_KEY: test-secret-key
+      run: |
+        cd user-service
+        pytest tests/ -v --cov=app --cov-report=xml --cov-report=term
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./user-service/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      if: secrets.DOCKER_USERNAME != ''
+    
+    - name: Build and push User Service
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./user-service/Dockerfile
+        push: ${{ secrets.DOCKER_USERNAME != '' }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/crypto-user-service:latest
+          ${{ secrets.DOCKER_USERNAME }}/crypto-user-service:${{ github.sha }}
+    
+    - name: Build and push API Gateway
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./api-gateway/Dockerfile
+        push: ${{ secrets.DOCKER_USERNAME != '' }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/crypto-api-gateway:latest
+          ${{ secrets.DOCKER_USERNAME }}/crypto-api-gateway:${{ github.sha }}
+    
+    - name: Build and push Market Data Service
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./market-data-service/Dockerfile
+        push: ${{ secrets.DOCKER_USERNAME != '' }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/crypto-market-data-service:latest
+          ${{ secrets.DOCKER_USERNAME }}/crypto-market-data-service:${{ github.sha }}
+    
+    - name: Build and push Analytics Service
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./analytics-service/Dockerfile
+        push: ${{ secrets.DOCKER_USERNAME != '' }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/crypto-analytics-service:latest
+          ${{ secrets.DOCKER_USERNAME }}/crypto-analytics-service:${{ github.sha }}
+    
+    - name: Build and push Sentiment Service
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./sentiment-service/Dockerfile
+        push: ${{ secrets.DOCKER_USERNAME != '' }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/crypto-sentiment-service:latest
+          ${{ secrets.DOCKER_USERNAME }}/crypto-sentiment-service:${{ github.sha }}
+
+  notify:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'Backend build ${{ job.status }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: secrets.SLACK_WEBHOOK != ''
