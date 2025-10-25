@@ -108,20 +108,20 @@
 
 ### 7. Implement Sentiment Analysis Service
 - [x] Setup service with NLP pipeline
-- [ ] Create news data ingestion (CryptoCompare API / NewsAPI)
+- [x] Create news data ingestion (CryptoCompare API / NewsAPI)
 - [ ] Create Twitter/social media data ingestion (if API available)
-- [ ] Implement sentiment analysis model:
-  - [ ] Use transformers (VADER / DistilBERT)
-  - [ ] Classify sentiment (positive, neutral, negative)
-- [ ] Implement Kafka producer for sentiment scores
-- [ ] Create storage layer:
-  - [ ] Save to PostgreSQL
-  - [ ] Cache in Redis
-- [ ] Create API endpoints:
-  - [ ] GET `/sentiment/{coin_id}`
-  - [ ] GET `/sentiment/trend/{coin_id}`
-- [ ] Implement scheduled sentiment updates
-- [ ] Write tests for NLP pipeline
+- [x] Implement sentiment analysis model:
+  - [x] Use transformers (VADER / DistilBERT)
+  - [x] Classify sentiment (positive, neutral, negative)
+- [x] Implement Kafka producer for sentiment scores
+- [x] Create storage layer:
+  - [x] Save to PostgreSQL
+  - [x] Cache in Redis
+- [x] Create API endpoints:
+  - [x] GET `/sentiment/{coin_id}`
+  - [x] GET `/sentiment/trend/{coin_id}`
+- [x] Implement scheduled sentiment updates
+- [x] Write tests for NLP pipeline
 
 ### 8. Implement API Gateway
 - [x] Setup FastAPI/Express/Go Fiber with routing
@@ -143,47 +143,47 @@
 - [x] Write integration tests
 
 ### 9. Implement Redis Caching Layer
-- [ ] Create Redis connection pool (with retry logic)
-- [ ] Implement cache decorator for functions
-- [ ] Create cache keys strategy:
-  - [ ] `price:{coin_id}` - Current prices
-  - [ ] `analytics:{coin_id}` - Analytics metrics
-  - [ ] `sentiment:{coin_id}` - Sentiment scores
-  - [ ] `portfolio:{user_id}` - User portfolios
-- [ ] Implement TTL configuration:
-  - [ ] Prices: 5-10 seconds
-  - [ ] Analytics: 1 minute
-  - [ ] Sentiment: 5 minutes
-  - [ ] Portfolios: 10 minutes
-- [ ] Implement cache invalidation strategy
+- [x] Create Redis connection pool (with retry logic)
+- [x] Implement cache decorator for functions
+- [x] Create cache keys strategy:
+  - [x] `price:{coin_id}` - Current prices
+  - [x] `analytics:{coin_id}` - Analytics metrics
+  - [x] `sentiment:{coin_id}` - Sentiment scores
+  - [x] `portfolio:{user_id}` - User portfolios
+- [x] Implement TTL configuration:
+  - [x] Prices: 5-10 seconds
+  - [x] Analytics: 1 minute
+  - [x] Sentiment: 5 minutes
+  - [x] Portfolios: 10 minutes
+- [x] Implement cache invalidation strategy
 - [ ] Add cache warming for frequently accessed data
-- [ ] Write tests for cache operations
+- [x] Write tests for cache operations
 
 ### 10. Implement Portfolio Service Features
-- [ ] Create portfolio creation endpoint:
-  - [ ] Validate user authentication
-  - [ ] Store portfolio metadata
-- [ ] Implement portfolio asset management:
-  - [ ] Add asset to portfolio
-  - [ ] Remove asset from portfolio
-  - [ ] Update asset quantity
-- [ ] Create portfolio retrieval endpoints:
-  - [ ] GET `/portfolio/{portfolio_id}`
-  - [ ] GET `/portfolio/user/{user_id}`
-- [ ] Implement performance calculation:
-  - [ ] Current value calculation
-  - [ ] Gain/loss calculation
-  - [ ] ROI percentage
-- [ ] Create portfolio history tracking
-- [ ] Implement watchlist functionality
-- [ ] Write comprehensive tests
+- [x] Create portfolio creation endpoint:
+  - [x] Validate user authentication
+  - [x] Store portfolio metadata
+- [x] Implement portfolio asset management:
+  - [x] Add asset to portfolio
+  - [x] Remove asset from portfolio
+  - [x] Update asset quantity
+- [x] Create portfolio retrieval endpoints:
+  - [x] GET `/portfolio/{portfolio_id}`
+  - [x] GET `/portfolio/user/{user_id}`
+- [x] Implement performance calculation:
+  - [x] Current value calculation
+  - [x] Gain/loss calculation
+  - [x] ROI percentage
+- [x] Create portfolio history tracking
+- [x] Implement watchlist functionality
+- [x] Write comprehensive tests
 
 ---
 
 ## Phase 3: Testing & Quality
 
 ### 11. Write Unit Tests for Backend Services
-- [ ] Setup pytest framework for each service
+- [x] Setup pytest framework for each service
 - [ ] Create tests for User Service:
   - [ ] Registration, login, token refresh
   - [ ] Profile management
@@ -196,16 +196,20 @@
   - [ ] Moving average calculations
   - [ ] Volatility computation
   - [ ] Correlation analysis
-- [ ] Create tests for Sentiment Service:
-  - [ ] NLP pipeline
-  - [ ] Sentiment classification
-  - [ ] Data storage
+- [x] Create tests for Sentiment Service:
+  - [x] NLP pipeline
+  - [x] Sentiment classification
+  - [x] Data storage
+- [x] Create tests for Portfolio Service:
+  - [x] CRUD operations
+  - [x] Performance calculations
+  - [x] Edge cases and boundaries
 - [ ] Create tests for API Gateway:
   - [ ] Routing and proxying
   - [ ] Rate limiting
   - [ ] Error handling
-- [ ] Aim for >80% code coverage
-- [ ] Setup coverage reporting
+- [x] Aim for >80% code coverage
+- [x] Setup coverage reporting
 
 ### 12. Implement Error Handling and Logging
 - [ ] Setup structured logging (Python logging / Winston)

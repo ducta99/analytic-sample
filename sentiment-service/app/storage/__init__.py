@@ -1,0 +1,3 @@
+"""
+Sentiment storage layer.
+"""

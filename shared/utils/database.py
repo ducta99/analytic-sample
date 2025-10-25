@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker
 )
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, StaticPool
 
 from shared.utils.config import settings
 
@@ -17,16 +17,32 @@ logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
-# Create async engine
-engine = create_async_engine(
-    settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://"),
-    echo=settings.ENVIRONMENT == "development",
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=3600,
-    connect_args={"timeout": 10}
-)
+# Determine if using SQLite (for testing) or PostgreSQL (for production)
+is_sqlite = "sqlite" in settings.DATABASE_URL
+
+# Create async engine with appropriate pool settings
+if is_sqlite:
+    # SQLite doesn't support connection pooling the same way
+    engine_config = {
+        "echo": settings.ENVIRONMENT == "development",
+        "poolclass": StaticPool,
+    }
+else:
+    # PostgreSQL with connection pooling
+    engine_config = {
+        "echo": settings.ENVIRONMENT == "development",
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_recycle": 3600,
+        "connect_args": {"timeout": 10}
+    }
+
+database_url = settings.DATABASE_URL
+if not is_sqlite:
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+
+engine = create_async_engine(database_url, **engine_config)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
