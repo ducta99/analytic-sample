@@ -88,9 +88,9 @@ class SentimentScheduler:
         """
         try:
             async with self.db_factory() as session:
-                from sentiment_service.app.nlp.classifier import EnsembleSentimentAnalyzer
-                from sentiment_service.app.storage.sentiment_store import SentimentStore
-                from sentiment_service.app.ingestors.newsapi import NewsAPIClient
+                from app.nlp.classifier import EnsembleSentimentAnalyzer
+                from app.storage.sentiment_store import SentimentStore
+                from app.ingestors.newsapi import NewsAPIClient
                 
                 analyzer = EnsembleSentimentAnalyzer()
                 store = SentimentStore(session)
@@ -161,9 +161,9 @@ class SentimentScheduler:
         """
         try:
             async with self.db_factory() as session:
-                from sentiment_service.app.ingestors.newsapi import NewsAPIClient
-                from sentiment_service.app.nlp.classifier import SentimentClassifier
-                from sentiment_service.app.storage.sentiment_store import SentimentStore
+                from app.ingestors.newsapi import NewsAPIClient
+                from app.nlp.classifier import SentimentClassifier
+                from app.storage.sentiment_store import SentimentStore
                 
                 newsapi_key = settings.NEWSAPI_KEY if hasattr(settings, 'NEWSAPI_KEY') else None
                 if not newsapi_key:

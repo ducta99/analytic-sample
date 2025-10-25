@@ -2,7 +2,7 @@
 User service database models.
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, TIMESTAMP
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, TIMESTAMP, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from shared.utils.database import Base
 

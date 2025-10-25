@@ -7,6 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from contextlib import asynccontextmanager
 
+# Import routers
+from app.routes import portfolio, performance, watchlist
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,6 +36,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include routers
+app.include_router(portfolio.router)
+app.include_router(performance.router)
+app.include_router(watchlist.router)
+
 
 @app.get("/health")
 async def health_check():
@@ -42,33 +50,6 @@ async def health_check():
         "service": "portfolio-service",
         "version": "1.0.0",
         "timestamp": datetime.utcnow()
-    }
-
-
-@app.get("/api/portfolio")
-async def list_portfolios(user_id: int):
-    """List user portfolios."""
-    return {
-        "success": True,
-        "data": {
-            "portfolios": [],
-            "count": 0
-        }
-    }
-
-
-@app.get("/api/portfolio/{portfolio_id}")
-async def get_portfolio(portfolio_id: int):
-    """Get portfolio details."""
-    return {
-        "success": True,
-        "data": {
-            "id": portfolio_id,
-            "name": "My Portfolio",
-            "total_value": 10000,
-            "total_gain_loss": 500,
-            "roi_pct": 5.0
-        }
     }
 
 

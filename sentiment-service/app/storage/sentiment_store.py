@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 import redis.asyncio as redis
 
-from sentiment_service.app.models import SentimentScore, NewsArticle
+from app.models import SentimentScore, NewsArticle
 
 logger = logging.getLogger(__name__)
 

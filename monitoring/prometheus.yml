@@ -1,0 +1,79 @@
+# Prometheus configuration for cryptocurrency analytics platform
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'crypto-analytics'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# Load rules files
+rule_files:
+  - '/etc/prometheus/rules/alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['api-gateway:8000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # User Service
+  - job_name: 'user-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['user-service:8001']
+
+  # Market Data Service
+  - job_name: 'market-data-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['market-data-service:8002']
+
+  # Analytics Service
+  - job_name: 'analytics-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['analytics-service:8003']
+
+  # Sentiment Service
+  - job_name: 'sentiment-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['sentiment-service:8004']
+
+  # PostgreSQL exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Kafka exporter
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+
+  # Node exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

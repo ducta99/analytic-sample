@@ -1,0 +1,975 @@
+"""
+OpenAPI/Swagger Schema for Cryptocurrency Analytics Dashboard
+
+This file defines the complete API specification using Swagger/OpenAPI format
+"""
+
+openapi: 3.0.0
+info:
+  title: Cryptocurrency Analytics Dashboard API
+  description: |
+    Real-time cryptocurrency analytics platform with microservices architecture.
+    
+    ## Features
+    - Real-time price tracking from multiple exchanges
+    - Technical analysis (moving averages, volatility, RSI, MACD)
+    - Sentiment analysis from news sources
+    - Portfolio management and tracking
+    - User authentication with JWT
+    - WebSocket support for real-time updates
+    
+    ## Authentication
+    Use JWT Bearer tokens for authenticated endpoints:
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+    ## Rate Limiting
+    - General endpoints: 100 requests/minute
+    - Auth endpoints: 5 requests/minute  
+    - Data endpoints: 1000 requests/minute
+    
+  version: 1.0.0
+  contact:
+    name: Development Team
+    url: https://github.com/yourusername/crypto-analytics
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.cryptoanalytics.com
+    description: Production server
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Verify API Gateway is running
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "healthy"
+                      timestamp:
+                        type: string
+                        format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+
+  # ==================== AUTH ENDPOINTS ====================
+  /api/users/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - password_confirm
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  example: john_doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                password_confirm:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        example: "123abc"
+                      username:
+                        type: string
+                        example: john_doe
+                      email:
+                        type: string
+                        example: john@example.com
+                      access_token:
+                        type: string
+                        example: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                      refresh_token:
+                        type: string
+                        example: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and get JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                      username:
+                        type: string
+                      email:
+                        type: string
+                      access_token:
+                        type: string
+                      refresh_token:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                      refresh_token:
+                        type: string
+
+  /api/users/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate JWT tokens
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  # ==================== USER ENDPOINTS ====================
+  /api/users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Get user profile
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Users
+      summary: Update user profile
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+
+  # ==================== MARKET DATA ENDPOINTS ====================
+  /api/market/prices:
+    get:
+      tags:
+        - Market Data
+      summary: Get current prices
+      parameters:
+        - name: coins
+          in: query
+          description: Comma-separated list of coin IDs
+          schema:
+            type: string
+            example: "bitcoin,ethereum,cardano"
+        - name: vs_currency
+          in: query
+          description: Target currency
+          schema:
+            type: string
+            default: "usd"
+      responses:
+        '200':
+          description: Current prices retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CoinPrice'
+
+  /api/market/price/{coin_id}:
+    get:
+      tags:
+        - Market Data
+      summary: Get price for specific coin
+      parameters:
+        - name: coin_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "bitcoin"
+      responses:
+        '200':
+          description: Coin price retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/CoinPrice'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/market/stream:
+    get:
+      tags:
+        - Market Data
+      summary: WebSocket stream for real-time prices
+      description: Connect to WebSocket for real-time price updates
+      parameters:
+        - name: coins
+          in: query
+          description: Comma-separated coin IDs to stream
+          schema:
+            type: string
+            example: "bitcoin,ethereum"
+      responses:
+        '101':
+          description: WebSocket upgrade successful
+
+  # ==================== ANALYTICS ENDPOINTS ====================
+  /api/analytics/moving-average/{coin_id}:
+    get:
+      tags:
+        - Analytics
+      summary: Get moving averages
+      parameters:
+        - name: coin_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: periods
+          in: query
+          description: Comma-separated periods (e.g., 7,14,50,200)
+          schema:
+            type: string
+            default: "50,200"
+      responses:
+        '200':
+          description: Moving averages retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      coin_id:
+                        type: string
+                      sma:
+                        type: object
+                      ema:
+                        type: object
+
+  /api/analytics/volatility/{coin_id}:
+    get:
+      tags:
+        - Analytics
+      summary: Get volatility metrics
+      parameters:
+        - name: coin_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          description: Period in days
+          schema:
+            type: integer
+            enum: [1, 7, 30, 90]
+            default: 30
+      responses:
+        '200':
+          description: Volatility data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      coin_id:
+                        type: string
+                      volatility:
+                        type: number
+                      std_dev:
+                        type: number
+
+  /api/analytics/correlation:
+    get:
+      tags:
+        - Analytics
+      summary: Get price correlation between coins
+      parameters:
+        - name: coin_1
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "bitcoin"
+        - name: coin_2
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "ethereum"
+        - name: period
+          in: query
+          description: Period in days
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Correlation data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      coin_1:
+                        type: string
+                      coin_2:
+                        type: string
+                      correlation:
+                        type: number
+                        format: float
+
+  # ==================== SENTIMENT ENDPOINTS ====================
+  /api/sentiment/{coin_id}:
+    get:
+      tags:
+        - Sentiment Analysis
+      summary: Get sentiment score for coin
+      parameters:
+        - name: coin_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sentiment data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/SentimentScore'
+
+  /api/sentiment/{coin_id}/trend:
+    get:
+      tags:
+        - Sentiment Analysis
+      summary: Get sentiment trend over time
+      parameters:
+        - name: coin_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Sentiment trend retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SentimentScore'
+
+  /api/sentiment/news/{coin_id}:
+    get:
+      tags:
+        - Sentiment Analysis
+      summary: Get news articles for coin
+      parameters:
+        - name: coin_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: News articles retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NewsArticle'
+
+  # ==================== PORTFOLIO ENDPOINTS ====================
+  /api/portfolio:
+    get:
+      tags:
+        - Portfolio
+      summary: Get all portfolios for user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Portfolios retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Portfolio'
+
+    post:
+      tags:
+        - Portfolio
+      summary: Create new portfolio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "My Portfolio"
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Portfolio created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Portfolio'
+
+  /api/portfolio/{portfolio_id}:
+    get:
+      tags:
+        - Portfolio
+      summary: Get portfolio details
+      parameters:
+        - name: portfolio_id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Portfolio retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Portfolio'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/portfolio/{portfolio_id}/assets:
+    post:
+      tags:
+        - Portfolio
+      summary: Add asset to portfolio
+      parameters:
+        - name: portfolio_id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - coin_id
+                - quantity
+                - purchase_price
+              properties:
+                coin_id:
+                  type: string
+                  example: "bitcoin"
+                quantity:
+                  type: number
+                  example: 0.5
+                purchase_price:
+                  type: number
+                  example: 45000
+                purchase_date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Asset added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Portfolio'
+
+  /api/portfolio/{portfolio_id}/performance:
+    get:
+      tags:
+        - Portfolio
+      summary: Get portfolio performance metrics
+      parameters:
+        - name: portfolio_id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Performance metrics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total_value:
+                        type: number
+                      total_cost:
+                        type: number
+                      total_gain_loss:
+                        type: number
+                      roi_percentage:
+                        type: number
+                      best_performer:
+                        type: object
+                      worst_performer:
+                        type: object
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+
+    CoinPrice:
+      type: object
+      properties:
+        coin_id:
+          type: string
+        symbol:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+          format: decimal
+        price_change_24h:
+          type: number
+        price_change_percent_24h:
+          type: number
+        market_cap:
+          type: number
+        market_cap_rank:
+          type: integer
+        volume_24h:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    SentimentScore:
+      type: object
+      properties:
+        coin_id:
+          type: string
+        overall_score:
+          type: number
+          format: float
+          minimum: -1
+          maximum: 1
+        positive_percent:
+          type: number
+        negative_percent:
+          type: number
+        neutral_percent:
+          type: number
+        source_count:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    NewsArticle:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+          format: uri
+        source:
+          type: string
+        image_url:
+          type: string
+          format: uri
+        published_at:
+          type: string
+          format: date-time
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+
+    Portfolio:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        total_value:
+          type: number
+        total_cost:
+          type: number
+        total_gain_loss:
+          type: number
+        roi_percentage:
+          type: number
+        assets:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              coin_id:
+                type: string
+              quantity:
+                type: number
+              purchase_price:
+                type: number
+              current_price:
+                type: number
+              purchase_date:
+                type: string
+                format: date
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "RESOURCE_NOT_FOUND"
+            message:
+              type: string
+              example: "Resource not found"
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using Bearer scheme
+
+tags:
+  - name: Health
+    description: System health check
+  - name: Authentication
+    description: User authentication and token management
+  - name: Users
+    description: User profile management
+  - name: Market Data
+    description: Real-time cryptocurrency price data
+  - name: Analytics
+    description: Technical analysis and indicators
+  - name: Sentiment Analysis
+    description: Sentiment analysis and news aggregation
+  - name: Portfolio
+    description: Portfolio management and tracking

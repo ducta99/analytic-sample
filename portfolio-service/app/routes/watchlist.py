@@ -10,7 +10,7 @@ import logging
 
 from shared.utils.database import get_db_session
 from shared.utils.responses import success_response, error_response
-from portfolio_service.app.models import Watchlist
+from app.models import Watchlist
 
 logger = logging.getLogger(__name__)
 

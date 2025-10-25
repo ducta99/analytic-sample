@@ -30,7 +30,7 @@ async def get_sentiment(
         Latest sentiment score or 404 if not found
     """
     try:
-        from sentiment_service.app.storage.sentiment_store import SentimentStore
+        from app.storage.sentiment_store import SentimentStore
         
         store = SentimentStore(db)
         sentiment = await store.get_latest_sentiment(coin_id)
@@ -80,7 +80,7 @@ async def get_sentiment_trend(
         List of sentiment scores ordered by timestamp
     """
     try:
-        from sentiment_service.app.storage.sentiment_store import SentimentStore
+        from app.storage.sentiment_store import SentimentStore
         
         store = SentimentStore(db)
         sentiments = await store.get_sentiment_trend(coin_id, hours=hours)
@@ -147,7 +147,7 @@ async def get_coin_news(
         List of recent news articles
     """
     try:
-        from sentiment_service.app.storage.sentiment_store import SentimentStore
+        from app.storage.sentiment_store import SentimentStore
         
         store = SentimentStore(db)
         articles = await store.get_recent_articles(coin_id, limit=limit)
@@ -195,7 +195,7 @@ async def compare_sentiment(
         Sentiment comparison for all coins
     """
     try:
-        from sentiment_service.app.storage.sentiment_store import SentimentStore
+        from app.storage.sentiment_store import SentimentStore
         
         coin_list = [c.strip() for c in coins.split(",") if c.strip()]
         

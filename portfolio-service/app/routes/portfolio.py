@@ -11,8 +11,8 @@ import logging
 
 from shared.utils.database import get_db_session
 from shared.utils.responses import success_response, error_response
-from portfolio_service.app.models import Portfolio, PortfolioAsset, PortfolioHistory
-from portfolio_service.app.calculations.performance import PerformanceCalculator
+from app.models import Portfolio, PortfolioAsset, PortfolioHistory
+from app.calculations.performance import PerformanceCalculator
 
 logger = logging.getLogger(__name__)
 

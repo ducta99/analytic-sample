@@ -12,7 +12,7 @@ import json
 from kafka import KafkaConsumer
 
 from shared.utils.exceptions import CryptoAnalyticsException
-from analytics_service.app.calculations import (
+from app.calculations import (
     MovingAverageCalculator,
     VolatilityCalculator,
     CorrelationCalculator,

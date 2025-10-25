@@ -4,7 +4,7 @@ Shared response models and utilities.
 from typing import Optional, Any, Generic, TypeVar, Dict
 from datetime import datetime
 from pydantic import BaseModel
-from fastapi import JSONResponse
+from fastapi.responses import JSONResponse
 
 
 T = TypeVar("T")

@@ -23,8 +23,8 @@ from shared.utils.exceptions import (
     ResourceNotFoundError
 )
 from shared.utils.responses import SuccessResponse
-from user_service.app.models import User, UserPreferences
-from user_service.app.schemas import (
+from app.models import User, UserPreferences
+from app.schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     UserResponse,

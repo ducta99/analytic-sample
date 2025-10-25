@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from shared.utils.database import init_db, close_db
 from shared.utils.exceptions import CryptoAnalyticsException
 from shared.utils.responses import ErrorResponse
-from user_service.app.routes import router
+from app.routes import router
 
 # Configure logging
 logging.basicConfig(
@@ -25,10 +25,19 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown."""
     # Startup
     logger.info("Starting User Service...")
-    await init_db()
+    try:
+        await init_db()
+        logger.info("Database connected successfully")
+    except Exception as e:
+        logger.warning(f"Database connection failed: {e}")
+        logger.warning("Service will start but database operations will fail")
     yield
     # Shutdown
     logger.info("Shutting down User Service...")
+    try:
+        await close_db()
+    except Exception as e:
+        logger.warning(f"Error during shutdown: {e}")
     await close_db()
 
 

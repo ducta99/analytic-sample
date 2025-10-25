@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from shared.utils.exceptions import CryptoAnalyticsException
-from market_data_service.app.routes import router, broadcast_price_update
-from market_data_service.app.clients import (
+from app.routes import router, broadcast_price_update
+from app.clients import (
     BinanceWebSocketClient,
     KafkaProducerClient
 )
@@ -37,15 +37,29 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Market Data Service...")
     
     # Initialize Kafka producer
-    kafka_client = KafkaProducerClient("kafka:29092")
-    kafka_client.connect()
+    try:
+        kafka_client = KafkaProducerClient("kafka:29092")
+        kafka_client.connect()
+        logger.info("Kafka connected successfully")
+    except Exception as e:
+        logger.warning(f"Kafka connection failed: {e}")
+        logger.warning("Service will start but real-time data streaming will be disabled")
+        kafka_client = None
     
     # Initialize Binance client and start streaming
     coins = ["BTC", "ETH", "BNB", "XRP", "ADA", "SOL", "DOGE", "USDT"]
-    binance_client = BinanceWebSocketClient(coins)
+    try:
+        binance_client = BinanceWebSocketClient(coins)
+        logger.info("Binance WebSocket client initialized")
+    except Exception as e:
+        logger.warning(f"Binance client initialization failed: {e}")
+        binance_client = None
     
     # Start price streaming in background
     async def stream_prices():
+        if not binance_client or not kafka_client:
+            logger.warning("Price streaming disabled (missing Binance or Kafka)")
+            return
         async for price_update in binance_client.connect():
             try:
                 # Publish to Kafka

@@ -1,0 +1,248 @@
+# Prometheus alerting rules for cryptocurrency analytics platform
+
+groups:
+  - name: api_gateway_alerts
+    interval: 10s
+    rules:
+      - alert: APIGatewayDown
+        expr: up{job="api-gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api-gateway
+        annotations:
+          summary: "API Gateway is down"
+          description: "API Gateway has been down for more than 1 minute"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+        annotations:
+          summary: "High error rate on API Gateway"
+          description: "Error rate exceeds 1% over last 5 minutes: {{ $value }}"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+        annotations:
+          summary: "High API latency"
+          description: "p95 latency exceeds 500ms: {{ $value }}"
+
+      - alert: RateLimitExceeded
+        expr: increase(http_requests_total{status="429"}[5m]) > 10
+        labels:
+          severity: info
+          service: api-gateway
+        annotations:
+          summary: "Rate limit exceeded"
+          description: "Rate limits triggered: {{ $value }} times in 5 minutes"
+
+  - name: microservices_alerts
+    interval: 10s
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"user-service|market-data-service|analytics-service|sentiment-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "{{ $labels.job }} at {{ $labels.instance }} has been down for 1 minute"
+
+      - alert: HighErrorRateService
+        expr: rate(errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in {{ $labels.service }}"
+          description: "Error rate: {{ $value | humanizePercentage }}"
+
+      - alert: ServiceLatencyHigh
+        expr: histogram_quantile(0.99, rate(database_query_duration_seconds_bucket[5m])) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency in {{ $labels.query_type }}"
+          description: "p99 latency exceeds 1s: {{ $value }}s"
+
+  - name: database_alerts
+    interval: 15s
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been unreachable for 1 minute"
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_activity_count > 50
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High PostgreSQL connections"
+          description: "Active connections: {{ $value }}"
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_statements_mean_exec_time[5m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow PostgreSQL queries detected"
+          description: "Mean query time: {{ $value }}ms"
+
+  - name: cache_alerts
+    interval: 15s
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis has been unreachable for 1 minute"
+
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Memory usage: {{ $value | humanizePercentage }}"
+
+      - alert: RedisCacheMissRate
+        expr: (rate(cache_misses_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High Redis cache miss rate"
+          description: "Cache miss rate: {{ $value | humanizePercentage }}"
+
+  - name: kafka_alerts
+    interval: 15s
+    rules:
+      - alert: KafkaDown
+        expr: up{job="kafka"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: message_queue
+        annotations:
+          summary: "Kafka broker is down"
+          description: "Kafka has been unreachable for 1 minute"
+
+      - alert: KafkaHighLag
+        expr: kafka_consumer_group_lag > 10000
+        for: 2m
+        labels:
+          severity: warning
+          component: message_queue
+        annotations:
+          summary: "High Kafka consumer lag"
+          description: "Consumer lag: {{ $value }} messages"
+
+      - alert: KafkaUnderReplicatedPartitions
+        expr: kafka_topic_partition_under_replicated_replicas > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: message_queue
+        annotations:
+          summary: "Kafka partitions under-replicated"
+          description: "Under-replicated partitions: {{ $value }}"
+
+  - name: system_alerts
+    interval: 15s
+    rules:
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage: {{ $value | humanize }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage: {{ $value | humanize }}%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage: {{ $value | humanize }}%"
+
+      - alert: NetworkErrors
+        expr: rate(node_network_transmit_errs_total[5m]) > 0 or rate(node_network_receive_errs_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Network errors detected on {{ $labels.instance }}"
+          description: "Network errors detected"
+
+  - name: business_metrics_alerts
+    interval: 15s
+    rules:
+      - alert: NoPriceUpdates
+        expr: rate(price_updates_total[5m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: data_pipeline
+        annotations:
+          summary: "No price updates received"
+          description: "Price update rate is zero for 2 minutes"
+
+      - alert: NoSentimentScores
+        expr: rate(sentiment_scores_processed_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: data_pipeline
+        annotations:
+          summary: "No sentiment scores processed"
+          description: "Sentiment processing may be stalled"
+
+      - alert: PortfolioCalculationFailures
+        expr: increase(errors_total{error_type="portfolio_calculation"}[5m]) > 5
+        labels:
+          severity: warning
+          component: portfolio
+        annotations:
+          summary: "Portfolio calculation failures detected"
+          description: "Failed calculations: {{ $value }}"
