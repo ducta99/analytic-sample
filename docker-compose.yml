@@ -172,6 +172,27 @@ services:
       - crypto-network
     restart: on-failure
 
+  portfolio-service:
+    build:
+      context: .
+      dockerfile: portfolio-service/Dockerfile
+    container_name: crypto-portfolio-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://crypto_user:crypto_password@postgres:5432/crypto_db
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+      ENVIRONMENT: development
+    ports:
+      - "8005:8005"
+    networks:
+      - crypto-network
+    restart: on-failure
+
   api-gateway:
     build:
       context: .
@@ -182,11 +203,13 @@ services:
       - market-data-service
       - analytics-service
       - sentiment-service
+      - portfolio-service
     environment:
       USER_SERVICE_URL: http://user-service:8001
       MARKET_SERVICE_URL: http://market-data-service:8002
       ANALYTICS_SERVICE_URL: http://analytics-service:8003
       SENTIMENT_SERVICE_URL: http://sentiment-service:8004
+      PORTFOLIO_SERVICE_URL: http://portfolio-service:8005
       JWT_SECRET_KEY: your-secret-key-change-in-production
       LOG_LEVEL: INFO
       ENVIRONMENT: development
@@ -200,14 +223,15 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: crypto-frontend
     ports:
-      - "3000:80"
+      - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:8000
-      REACT_APP_WS_URL: ws://localhost:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+      NODE_ENV: production
     networks:
       - crypto-network
     restart: on-failure
